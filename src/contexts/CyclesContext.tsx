@@ -1,4 +1,4 @@
-import { createContext, useState, type ReactNode } from "react";
+import { createContext, useReducer, useState, type ReactNode } from "react";
 
 interface CreateCycleData {
   task: string;
@@ -29,13 +29,21 @@ interface CyclesContextType {
 export const cyclesContext = createContext({} as CyclesContextType);
 
 interface CyclesContextProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
-export function CyclesContextProvider({ children }: CyclesContextProviderProps) {
+export function CyclesContextProvider({children,}: CyclesContextProviderProps) {
+
+  const [cycles, dispatch] = useReducer((state: Cycle[], action: any) => {
     
-  //                             tipo do useState, um array de Cycle
-  const [cycles, setCycles] = useState<Cycle[]>([]); //iniciando como um array vazio de cycles
+    // if para criar um novo ciclo pegando o estado anterior e adicionando um novo ciclo
+    if (action.type === "CREATE_NEW_CYCLE") {
+      return [...state, action.payload.newCycle];
+    }
+
+    return state;
+  }, []);
+
   const [activeCycleId, setActiveCycleId] = useState<string | null>(null); //str or null porque no início da aplicação não tem nenhum ciclo ativo
   const [amountSecondsPassed, setAmountSecondsPassed] = useState(0); //armazenar segundos que já se passaram desde o início do ciclo
 
@@ -43,18 +51,6 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
 
   function setSecondsPassed(seconds: number) {
     setAmountSecondsPassed(seconds);
-  }
-
-  function markCurrentCycleAsFinished() {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, finishedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
-        } else {
-          return cycle;
-        }
-      })
-    );
   }
 
   function createNewCycle(data: CreateCycleData) {
@@ -65,24 +61,56 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
       startDate: new Date(),
     };
 
-    setCycles((state) => [...state, newCycle]); //pego o estado atual da variável de ciclos, copia o estado atual e adicona o novo ciclo
+    //setCycles((state) => [...state, newCycle]); //pego o estado atual da variável de ciclos, copia o estado atual e adicona o novo ciclo
+    dispatch({
+      type: "CREATE_NEW_CYCLE",
+      payload: {
+        newCycle,
+      },
+    });
+
     setActiveCycleId(newCycle.id);
     setAmountSecondsPassed(0); //resetar o contador de segundos passados para 0 quando iniciar um novo ciclo
 
     //reset(); //usar defalt values para resetar o formulário para default
   }
 
-  function interruptCurrentCycle() {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, interruptedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
-        } else {
-          return cycle;
-        }
-      })
-    );
+  function markCurrentCycleAsFinished() {
+    // setCycles((state) =>
+    //   state.map((cycle) => {
+    //     if (cycle.id === activeCycleId) {
+    //       return { ...cycle, finishedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
+    //     } else {
+    //       return cycle;
+    //     }
+    //   })
+    // );
 
+    dispatch({
+      type: "MARK_CURRENT_CYCLE_AS_FINISHED",
+      payload: {
+        activeCycleId,
+      },
+    });
+  }
+
+  function interruptCurrentCycle() {
+    // setCycles((state) =>
+    //   state.map((cycle) => {
+    //     if (cycle.id === activeCycleId) {
+    //       return { ...cycle, interruptedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
+    //     } else {
+    //       return cycle;
+    //     }
+    //   })
+    // );
+
+    dispatch({
+      type: "INTERRUPT_CURRENT_CYCLE",
+      payload: {
+        activeCycleId,
+      },
+    });
     setActiveCycleId(null); //interrompe o ciclo ativo
   }
 
@@ -99,7 +127,7 @@ export function CyclesContextProvider({ children }: CyclesContextProviderProps) 
         interruptCurrentCycle,
       }}
     >
-        {children}
+      {children}
     </cyclesContext.Provider>
   );
 }
