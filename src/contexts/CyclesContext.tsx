@@ -32,21 +32,62 @@ interface CyclesContextProviderProps {
   children: ReactNode;
 }
 
+interface CyclesState {
+  cycles: Cycle[];
+  activeCycleId: string | null;
+}
+
 export function CyclesContextProvider({children,}: CyclesContextProviderProps) {
+  
+  const [cyclesState, dispatch] = useReducer((state: CyclesState, action: any) => {
 
-  const [cycles, dispatch] = useReducer((state: Cycle[], action: any) => {
-    
-    // if para criar um novo ciclo pegando o estado anterior e adicionando um novo ciclo
-    if (action.type === "CREATE_NEW_CYCLE") {
-      return [...state, action.payload.newCycle];
-    }
+      switch(action.type) {
+        case 'CREATE_NEW_CYCLE':
+          return {
+            ...state,
+            cycles: [...state.cycles, action.payload.newCycle],
+            activeCycleId: action.payload.newCycle.id, //pegando o id do ciclo ativo e já setando como ciclo ativo
+          };
 
-    return state;
-  }, []);
+        case 'INTERRUPT_CURRENT_CYCLE':
+          return {
+            ...state,
+            cycles: state.cycles.map((cycle) => {
+              if (cycle.id === state.activeCycleId) {
+                return { ...cycle, interruptedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
+              } else {
+                return cycle;
+              }
+            }),
+            activeCycleId: null,
+          };
 
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null); //str or null porque no início da aplicação não tem nenhum ciclo ativo
+        case 'MARK_CURRENT_CYCLE_AS_FINISHED':
+          return {
+            ...state,
+            cycles: state.cycles.map((cycle) => {
+              if (cycle.id === state.activeCycleId) {
+                return { ...cycle, finishedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
+              } else {
+                return cycle;
+              }
+            }),
+            activeCycleId: null,
+          };
+
+        default:
+          return state;
+      } 
+
+    },
+
+      { cycles: [], activeCycleId: null }
+      
+  );
+
   const [amountSecondsPassed, setAmountSecondsPassed] = useState(0); //armazenar segundos que já se passaram desde o início do ciclo
 
+  const { cycles, activeCycleId } = cyclesState;
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId); //se o ciclo ativo é igual ao id do ciclo ativo, retorna o ciclo ativo
 
   function setSecondsPassed(seconds: number) {
@@ -69,23 +110,12 @@ export function CyclesContextProvider({children,}: CyclesContextProviderProps) {
       },
     });
 
-    setActiveCycleId(newCycle.id);
     setAmountSecondsPassed(0); //resetar o contador de segundos passados para 0 quando iniciar um novo ciclo
 
     //reset(); //usar defalt values para resetar o formulário para default
   }
 
   function markCurrentCycleAsFinished() {
-    // setCycles((state) =>
-    //   state.map((cycle) => {
-    //     if (cycle.id === activeCycleId) {
-    //       return { ...cycle, finishedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
-    //     } else {
-    //       return cycle;
-    //     }
-    //   })
-    // );
-
     dispatch({
       type: "MARK_CURRENT_CYCLE_AS_FINISHED",
       payload: {
@@ -95,23 +125,12 @@ export function CyclesContextProvider({children,}: CyclesContextProviderProps) {
   }
 
   function interruptCurrentCycle() {
-    // setCycles((state) =>
-    //   state.map((cycle) => {
-    //     if (cycle.id === activeCycleId) {
-    //       return { ...cycle, interruptedDate: new Date() }; //adiciona a data de interrupção ao ciclo ativo
-    //     } else {
-    //       return cycle;
-    //     }
-    //   })
-    // );
-
     dispatch({
       type: "INTERRUPT_CURRENT_CYCLE",
       payload: {
         activeCycleId,
       },
     });
-    setActiveCycleId(null); //interrompe o ciclo ativo
   }
 
   return (

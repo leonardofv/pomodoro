@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
 export const HistoryContainer = styled.main`
-    border: 1px solid yellow;
+    /* border: 1px solid yellow; */
     flex: 1;
     padding: 3.5rem;
 
@@ -16,7 +16,7 @@ export const HistoryContainer = styled.main`
 
 
 export const HistoryList = styled.div`
-    border: 1px solid yellow;
+    /* border: 1px solid yellow; */
     flex: 1;  //ocupar todo o espaço disponível
     overflow: auto; //criar barra de rolagem quando necessário
 
